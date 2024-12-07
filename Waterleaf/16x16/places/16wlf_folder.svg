@@ -33,7 +33,7 @@
      id="path5"
      d="m 1,2 v 11 c 0,0 0,1 1,1 h 12 c 0,0 1,0 1,-1 V 4 C 15,3 14,3 14,3 H 9 L 7,1 H 2 C 2,1 1,1 1,2 Z"
      class="ColorScheme-Text"
-     style="color:#444444;fill:currentColor" />
+     style="color:#444444;fill:#444444" />
   <path
      id="path818"
      d="m 2.5,8 h 11 V 5.4 h -11 z"
