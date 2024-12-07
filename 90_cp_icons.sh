@@ -27,12 +27,14 @@ fi
 
 #Remove "$DST_ICON_NAME" icons from destination directory
 find $DST_ICON_DIR/ -type f,l -iname "$DST_ICON_NAME" | while read -r ICONFL01 ; do
+  printf '.'
   # echo "rm $ICONFL01"
   rm $ICONFL01
 done
 
 #Copy "$SRC_ICON_NAME" icon variants from source to destination directory
 find $SRC_ICON_DIR/ -type f,l -iname "$SRC_ICON_NAME" | while read -r ICONFL02 ; do
+  printf '.'
   ICONFL03="$( echo $ICONFL02 | awk -F'/' '{ print $(NF-2)"/"$(NF-1)"/" }' )/$DST_ICON_NAME"
   # echo "cp --remove-destination $ICONFL02 $DST_ICON_DIR/$ICONFL03"
   mkdir -p "$( dirname "$DST_ICON_DIR/$ICONFL03" )"
@@ -59,10 +61,10 @@ if [ ! -d "$SRC_DIR" ] || [ ! -d "$OUT_DIR" ] || [ ! -f "$ICN_LIST" ] ; then
   echo "Need proper arguments, exiting ..."
   exit 30
 fi
-if [ ! -f "$SRC_DIR/index.theme" ] ; then
-  echo "Source icon theme not found, exiting ..."
-  exit 40
-fi
+# if [ ! -f "$SRC_DIR/index.theme" ] ; then
+#   echo "Source icon theme not found, exiting ..."
+#   exit 40
+# fi
 if [ ! -f "$OUT_DIR/index.theme" ] ; then
   echo "Target icon theme not found, exiting ..."
   exit 50
@@ -74,3 +76,5 @@ while read LINE1 ; do
     cp_icon "$1" "$2" "$LINE1.svg"
   fi
 done < $ICN_LIST
+
+printf '\n'
