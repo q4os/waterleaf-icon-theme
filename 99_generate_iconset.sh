@@ -67,7 +67,7 @@ mkdir -p $WK1DIR/addicons
 rsync -a $ADDICONS1DIR/* $WK1DIR/addicons/
 
 if [ ! -d "$OUT1_ICSET" ] ; then
-  if [ "$SCOURSVG_ADDICONS" = "1" ] ; then
+  if [ "$SCOURSVG_ADDICONS" != "0" ] ; then
     echo && wig_read "Before scour svg icons"
     cd $WK1DIR/addicons
     find . -name '*.svg' -type f | while read -r ICONFL01 ; do
@@ -92,7 +92,6 @@ if [ ! -d "$OUT1_ICSET" ] ; then
   find $WK1DIR/outicons/. -type f,l -name "*.SVG" | xargs rm -f #incorrect file names
   find $WK1DIR/outicons/. -type f,l -name ".directory" | xargs rm -f #incorrect file
   find $WK1DIR/outicons/. -type f,l -name "icon-theme.cache" | xargs rm -f
-  find $WK1DIR/outicons/. -type f -name "*.svg" -size +300k | xargs rm -f #icons consuming too much space
   if [ -f "$WK1DIR/hook2_iconset_mods.sh" ] ; then
     echo "Running hook: $WK1DIR/hook2_iconset_mods.sh"
     . $WK1DIR/hook2_iconset_mods.sh
@@ -129,48 +128,69 @@ if [ ! -d "$OUT1_ICSET" ] ; then
   cd $WK1DIR/
   FIX_DOUBLE_LINKS="1" sh 95_fix_symlinks.sh "$WK1DIR/outicons" #FIX_DOUBLE_LINKS=1 for fixing multiple level symlinks
 
-  if [ "$SCOURSVG_OUTICONS" = "1" ] ; then
-    echo && wig_read "Before scour svg icons"
+  if [ "$FIXTDE1_SVG" != "0" ] ; then
+    WK2DIR="/tmp/src_svgtdeicons_fix/"
+    if [ ! -x "$WK2DIR/src/svgtdefix/svgtdefix" ] ; then
+      echo && wig_read "Before compiling "
+      rm -rf $WK2DIR ; mkdir -p $WK2DIR
+      rsync -a $WK1DIR/src_svgtdeicons_fix $WK2DIR/
+      mv $WK2DIR/src_svgtdeicons_fix $WK2DIR/src
+      cd $WK2DIR/src
+      tqmake base.pro ; make
+      if [ ! -x "$WK2DIR/src/svgtdefix/svgtdefix" ] ; then
+        echo "Error compiling, exiting ..."
+        exit 102
+      fi
+    fi
+
+    echo && wig_read "Before fixing tde svg icons colors"
     cd $WK1DIR/outicons
     find . -name '*.svg' -type f | while read -r ICONFL01 ; do
-      printf '.'
-      if [ -n "$( cat $ICONFL01 | grep '<metadata' )" ] ; then
-        # echo "Scouring $ICONFL01"
-        printf 'X'
-        scour --quiet -i $ICONFL01 -o /tmp/.xscrousvgtmp.svg
-        cp /tmp/.xscrousvgtmp.svg $ICONFL01
+      # echo ">>$ICONFL01"
+      # rm -f /tmp/zzzx1.svg
+      $WK2DIR/src/svgtdefix/svgtdefix $ICONFL01 > /dev/null
+      if [ -f "/tmp/zzzx1.svg" ] ; then
+        printf 'x'
+        cp /tmp/zzzx1.svg $ICONFL01
+      else
+        printf '.'
       fi
     done
     echo
   fi
 
-  if [ "$FIXTDE1_SVG" = "1" ] ; then
-    echo && wig_read "Before fixing tde svg icons colors"
+  if [ "$SCOURSVG_OUTICONS" != "0" ] ; then
+    echo && wig_read "Before scour svg icons"
     cd $WK1DIR/outicons
     find . -name '*.svg' -type f | while read -r ICONFL01 ; do
-      # echo ">>$ICONFL01"
-      printf '.'
-      CLRCOD=$( cat $ICONFL01 | grep '.ColorScheme-Text { color:#' | tail -n1 | awk -F'.ColorScheme-Text { color:#' '{ print $2 }' | awk -F';' '{ print $1 }' )
-      if [ -n "$CLRCOD" ] ; then
-        if [ -n "$( cat $ICONFL01 | grep 'fill="currentColor"' )" ] ; then
-          # echo "fix-1 $ICONFL01"
-          printf 'A'
-          sed -i "s/fill=\"currentColor\"/fill=\"#$CLRCOD\"/" $ICONFL01
-        elif [ -n "$( cat $ICONFL01 | grep 'fill:currentColor' )" ] ; then
-          # echo "fix-2 $ICONFL01"
-          printf 'B'
-          sed -i "s/fill:currentColor/fill:#$CLRCOD/" $ICONFL01
-        fi
+      if [ -n "$( cat $ICONFL01 | grep '<metadata' )" ] ; then
+        # echo "Scouring $ICONFL01"
+        printf 'X'
+        scour --quiet -i $ICONFL01 -o /tmp/.xscrousvgtmp.svg
+        cp /tmp/.xscrousvgtmp.svg $ICONFL01
+      else
+        printf '.'
       fi
     done
     echo
+  fi
+
+  if [ -z "$SIZE_RM" ] ; then
+    SIZE_RM="90k"
+  fi
+  if [ -n "$SIZE_RM" ] && [ "$SIZE_RM" != "0" ] ; then
+    echo && wig_read "Before remove icon files consuming more then \"$SIZE_RM\" space."
+    cd $WK1DIR/outicons
+    find $WK1DIR/outicons/. -type f -name "*.svg" -size +$SIZE_RM | xargs rm -f #icons consuming too much space
+  else
+    echo "Big sized icons hasn't been removed."
   fi
 
   # --- Copy result ---
   echo && wig_read "Before result copy"
   rm -rf $OUT1_ICSET
   mkdir -p $OUT1_ICSET/
-  rsync -a $WK1DIR/outicons/* $OUT1_ICSET/
+  rsync -a --no-perms --no-owner --no-group $WK1DIR/outicons/* $OUT1_ICSET/
 
   echo ; echo " Icon set has been generated in: \"$OUT1_ICSET/\"" ; echo
 else
